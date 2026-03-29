@@ -31,7 +31,7 @@
           <form id="editor-form" class="editor" autocomplete="off">
             <label>
               Contact name
-              <input id="name" name="name" type="text" maxlength="40" />
+              <input id="name" name="name" type="text" maxlength="40" value="Alex Carter" />
             </label>
 
             <label>
@@ -41,17 +41,17 @@
 
             <label>
               Message
-              <textarea id="message" name="message" rows="4" maxlength="280"></textarea>
+              <textarea id="message" name="message" rows="4" maxlength="280">Can we lock this launch for tomorrow morning?</textarea>
             </label>
 
             <label>
               Timestamp
-              <input id="timestamp" name="timestamp" type="text" maxlength="10" placeholder="9:41" />
+              <input id="timestamp" name="timestamp" type="text" maxlength="10" value="9:41" />
             </label>
 
             <label>
               Presence/status
-              <input id="status" name="status" type="text" maxlength="40" placeholder="online" />
+              <input id="status" name="status" type="text" maxlength="40" value="online" />
             </label>
           </form>
         </section>
@@ -67,6 +67,248 @@
       </section>
     </main>
 
-    <script type="module" src="src/main.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script>
+      // State management
+      const DEFAULT_EDITOR_STATE = {
+        name: "Alex Carter",
+        avatar: "",
+        message: "Can we lock this launch for tomorrow morning?",
+        timestamp: "9:41",
+        status: "online",
+      };
+
+      function sanitizeEditorState(state) {
+        return {
+          name: (state.name || "").trim() || DEFAULT_EDITOR_STATE.name,
+          avatar: (state.avatar || "").trim(),
+          message: (state.message || "").trim() || DEFAULT_EDITOR_STATE.message,
+          timestamp: (state.timestamp || "").trim() || DEFAULT_EDITOR_STATE.timestamp,
+          status: (state.status || "").trim() || DEFAULT_EDITOR_STATE.status,
+        };
+      }
+
+      function applyFieldUpdate(currentState, field, value) {
+        return { ...currentState, [field]: value };
+      }
+
+      function initialsFromName(name) {
+        const tokens = String(name || "").trim().split(/\s+/).filter(Boolean).slice(0, 2);
+        if (!tokens.length) return "?";
+        return tokens.map(t => t[0].toUpperCase()).join("");
+      }
+
+      // Template Engine
+      function createChatTemplate(config) {
+        return {
+          id: config.id,
+          label: config.label,
+          render(root, state) {
+            root.innerHTML = "";
+
+            const phone = document.createElement("div");
+            phone.className = "phone " + config.phoneClass;
+
+            const inner = document.createElement("div");
+            inner.className = "phone__inner " + config.innerClass;
+
+            const topbar = document.createElement("header");
+            topbar.className = "chat-topbar " + config.topbarClass;
+
+            const avatar = document.createElement("div");
+            avatar.className = "chat-avatar";
+            if (state.avatar) {
+              const img = document.createElement("img");
+              img.src = state.avatar;
+              img.alt = state.name + " profile image";
+              img.onerror = () => { avatar.textContent = initialsFromName(state.name); };
+              avatar.appendChild(img);
+            } else {
+              avatar.textContent = initialsFromName(state.name);
+            }
+
+            const meta = document.createElement("div");
+            meta.className = "chat-meta";
+            const nameEl = document.createElement("strong");
+            nameEl.textContent = state.name;
+            const statusEl = document.createElement("small");
+            statusEl.textContent = state.status;
+            meta.append(nameEl, statusEl);
+
+            topbar.append(avatar, meta);
+
+            const body = document.createElement("section");
+            body.className = "chat-body " + config.bodyClass;
+
+            const bubble = document.createElement("article");
+            bubble.className = "message-bubble " + config.bubbleClass;
+            if (config.messagePlacement === "left") {
+              bubble.classList.add("message-bubble--left");
+            }
+            const messageEl = document.createElement("p");
+            messageEl.textContent = state.message;
+            const timestampEl = document.createElement("small");
+            timestampEl.className = "bubble-time";
+            timestampEl.textContent = state.timestamp;
+
+            bubble.append(messageEl, timestampEl);
+            body.appendChild(bubble);
+
+            inner.append(topbar, body);
+
+            if (config.composerText) {
+              const composer = document.createElement("div");
+              composer.className = "chat-composer";
+              composer.textContent = config.composerText;
+              inner.appendChild(composer);
+            }
+
+            phone.appendChild(inner);
+            root.appendChild(phone);
+          }
+        };
+      }
+
+      // Templates
+      const whatsappTemplate = createChatTemplate({
+        id: "whatsapp",
+        label: "WhatsApp",
+        phoneClass: "phone--whatsapp",
+        innerClass: "phone__inner--whatsapp",
+        topbarClass: "chat-topbar--whatsapp",
+        bodyClass: "chat-body--whatsapp",
+        bubbleClass: "message-bubble--whatsapp",
+        messagePlacement: "right",
+        composerText: "",
+      });
+
+      const instagramDmTemplate = createChatTemplate({
+        id: "instagram",
+        label: "Instagram DM",
+        phoneClass: "phone--instagram",
+        innerClass: "phone__inner--instagram",
+        topbarClass: "chat-topbar--instagram",
+        bodyClass: "chat-body--instagram",
+        bubbleClass: "message-bubble--instagram",
+        messagePlacement: "left",
+        composerText: "Message...",
+      });
+
+      // Export functionality
+      const WATERMARK_TEXT = "my-socials-generator.app";
+
+      function drawWatermark(canvas) {
+        const ctx = canvas.getContext("2d");
+        const padding = 12;
+        const fontSize = Math.max(12, Math.round(canvas.width * 0.03));
+
+        ctx.save();
+        ctx.font = fontSize + "px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+        ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+        ctx.textBaseline = "bottom";
+
+        const textWidth = ctx.measureText(WATERMARK_TEXT).width;
+        const x = canvas.width - textWidth - padding;
+        const y = canvas.height - padding;
+
+        ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+        ctx.shadowBlur = 3;
+        ctx.fillText(WATERMARK_TEXT, x, y);
+        ctx.restore();
+      }
+
+      async function exportPreview(rootElement) {
+        try {
+          const canvas = await html2canvas(rootElement, {
+            useCORS: true,
+            scale: 2,
+            backgroundColor: null,
+            logging: false,
+          });
+
+          drawWatermark(canvas);
+
+          canvas.toBlob((blob) => {
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "screenshot.png";
+            a.click();
+            URL.revokeObjectURL(url);
+          }, "image/png");
+        } catch (err) {
+          console.error("exportPreview failed:", err);
+          alert("Export failed. Please try again.");
+        }
+      }
+
+      // App initialization
+      const form = document.querySelector("#editor-form");
+      const previewRoot = document.querySelector("#preview-root");
+      const laneInputs = Array.from(document.querySelectorAll('input[name="lane"]'));
+
+      const templateRegistry = {
+        instagram: instagramDmTemplate,
+        whatsapp: whatsappTemplate,
+      };
+
+      let activeTemplateId = "whatsapp";
+      let editorState = { ...DEFAULT_EDITOR_STATE };
+
+      const requestedLane = new URLSearchParams(window.location.search).get("lane");
+      if (requestedLane && templateRegistry[requestedLane]) {
+        activeTemplateId = requestedLane;
+        if (requestedLane === "instagram") {
+          editorState = applyFieldUpdate(editorState, "status", "Active now");
+        }
+      }
+
+      function render() {
+        const activeTemplate = templateRegistry[activeTemplateId];
+        const safeState = sanitizeEditorState(editorState);
+        activeTemplate.render(previewRoot, safeState);
+      }
+
+      function syncFormWithState() {
+        const formElements = ["name", "avatar", "message", "timestamp", "status"];
+        formElements.forEach((fieldName) => {
+          const field = form.elements.namedItem(fieldName);
+          if (field) {
+            field.value = editorState[fieldName];
+          }
+        });
+      }
+
+      laneInputs.forEach((input) => {
+        input.checked = input.value === activeTemplateId;
+        input.addEventListener("change", (event) => {
+          activeTemplateId = event.target.value;
+
+          if (activeTemplateId === "instagram") {
+            editorState = applyFieldUpdate(editorState, "status", "Active now");
+          } else if (activeTemplateId === "whatsapp") {
+            editorState = applyFieldUpdate(editorState, "status", "online");
+          }
+
+          syncFormWithState();
+          render();
+        });
+      });
+
+      form.addEventListener("input", (event) => {
+        const target = event.target;
+        editorState = applyFieldUpdate(editorState, target.name, target.value);
+        render();
+      });
+
+      // Initial render
+      syncFormWithState();
+      render();
+
+      document.getElementById("export-btn")?.addEventListener("click", async () => {
+        await exportPreview(previewRoot);
+      });
+    </script>
   </body>
 </html>
