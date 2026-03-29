@@ -1,0 +1,12 @@
+{
+  "name": "my-socials-generator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "html2canvas": "^1.4.1"
+  }
+}

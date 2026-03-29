@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Socials Generator - WhatsApp + Instagram DM</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app__header">
+        <p class="eyebrow">Template Lane</p>
+        <h1>Social Chat Generator</h1>
+        <p class="subtitle">Switch platform lane and edit fields. Preview updates instantly.</p>
+      </header>
+
+      <section class="workspace" aria-label="Generator workspace">
+        <section class="panel panel--editor" aria-label="Editor">
+          <h2>Editor</h2>
+          <fieldset class="lane-picker">
+            <legend>Platform lane</legend>
+            <label>
+              <input type="radio" name="lane" value="whatsapp" checked />
+              WhatsApp
+            </label>
+            <label>
+              <input type="radio" name="lane" value="instagram" />
+              Instagram DM
+            </label>
+          </fieldset>
+          <form id="editor-form" class="editor" autocomplete="off">
+            <label>
+              Contact name
+              <input id="name" name="name" type="text" maxlength="40" />
+            </label>
+
+            <label>
+              Profile image URL
+              <input id="avatar" name="avatar" type="url" placeholder="https://..." />
+            </label>
+
+            <label>
+              Message
+              <textarea id="message" name="message" rows="4" maxlength="280"></textarea>
+            </label>
+
+            <label>
+              Timestamp
+              <input id="timestamp" name="timestamp" type="text" maxlength="10" placeholder="9:41" />
+            </label>
+
+            <label>
+              Presence/status
+              <input id="status" name="status" type="text" maxlength="40" placeholder="online" />
+            </label>
+          </form>
+        </section>
+
+        <section class="panel panel--preview" aria-label="Preview">
+          <h2>Preview</h2>
+          <div id="preview-root" class="preview-root"></div>
+          <div class="export-row">
+            <button id="export-btn" class="btn-export" type="button">Export PNG</button>
+            <small class="export-hint">Free exports include a watermark.</small>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>
