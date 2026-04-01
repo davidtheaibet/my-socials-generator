@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Socials Generator - WhatsApp + Instagram DM</title>
+    <title>Socials Generator - Multi-Platform</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -26,6 +26,18 @@
             <label>
               <input type="radio" name="lane" value="instagram" />
               Instagram DM
+            </label>
+            <label>
+              <input type="radio" name="lane" value="snapchat" />
+              Snapchat
+            </label>
+            <label>
+              <input type="radio" name="lane" value="messenger" />
+              Messenger
+            </label>
+            <label>
+              <input type="radio" name="lane" value="tiktok" />
+              TikTok
             </label>
           </fieldset>
           <form id="editor-form" class="editor" autocomplete="off">
@@ -63,8 +75,31 @@
             <button id="export-btn" class="btn-export" type="button">Export PNG</button>
             <small class="export-hint">Free exports include a watermark.</small>
           </div>
+          <div class="pricing-row">
+            <button class="btn-plan" type="button" data-plan="weekly" data-price="$2.99" data-period="/ week">
+              <span class="btn-plan__price">$2.99</span>
+              <span class="btn-plan__label">per week</span>
+            </button>
+            <button class="btn-plan btn-plan--best" type="button" data-plan="lifetime" data-price="$9.99" data-period="one-time">
+              <span class="btn-plan__price">$9.99</span>
+              <span class="btn-plan__label">⭐ Best Value — Lifetime</span>
+            </button>
+          </div>
         </section>
       </section>
+
+    <!-- Payment modal -->
+    <div id="payment-modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal">
+        <button class="modal__close" id="modal-close-btn" aria-label="Close">✕</button>
+        <h3 id="modal-title">Upgrade to Pro</h3>
+        <span class="modal__plan-name" id="modal-plan-name">Weekly</span>
+        <div class="modal__price-display" id="modal-price">$2.99</div>
+        <div class="modal__price-note" id="modal-price-note">per week — cancel any time</div>
+        <button class="modal__cta" id="modal-cta-btn" type="button">Get Pro Access</button>
+        <p class="modal__footer">Secure payment · No watermarks · All platforms</p>
+      </div>
+    </div>
     </main>
 
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
@@ -194,6 +229,45 @@
         composerText: "Message...",
       });
 
+      const isPaidUser = false;
+
+      // Templates (continued)
+      const snapchatTemplate = createChatTemplate({
+        id: "snapchat",
+        label: "Snapchat",
+        phoneClass: "phone--snapchat",
+        innerClass: "phone__inner--snapchat",
+        topbarClass: "chat-topbar--snapchat",
+        bodyClass: "chat-body--snapchat",
+        bubbleClass: "message-bubble--snapchat",
+        messagePlacement: "right",
+        composerText: "Send a chat",
+      });
+
+      const messengerTemplate = createChatTemplate({
+        id: "messenger",
+        label: "Messenger",
+        phoneClass: "phone--messenger",
+        innerClass: "phone__inner--messenger",
+        topbarClass: "chat-topbar--messenger",
+        bodyClass: "chat-body--messenger",
+        bubbleClass: "message-bubble--messenger",
+        messagePlacement: "right",
+        composerText: "Aa",
+      });
+
+      const tiktokTemplate = createChatTemplate({
+        id: "tiktok",
+        label: "TikTok",
+        phoneClass: "phone--tiktok",
+        innerClass: "phone__inner--tiktok",
+        topbarClass: "chat-topbar--tiktok",
+        bodyClass: "chat-body--tiktok",
+        bubbleClass: "message-bubble--tiktok",
+        messagePlacement: "right",
+        composerText: "Send a message...",
+      });
+
       // Export functionality
       const WATERMARK_TEXT = "my-socials-generator.app";
 
@@ -226,7 +300,9 @@
             logging: false,
           });
 
-          drawWatermark(canvas);
+          if (!isPaidUser) {
+            drawWatermark(canvas);
+          }
 
           canvas.toBlob((blob) => {
             if (!blob) return;
@@ -251,6 +327,17 @@
       const templateRegistry = {
         instagram: instagramDmTemplate,
         whatsapp: whatsappTemplate,
+        snapchat: snapchatTemplate,
+        messenger: messengerTemplate,
+        tiktok: tiktokTemplate,
+      };
+
+      const laneStatusDefaults = {
+        instagram: "Active now",
+        whatsapp: "online",
+        snapchat: "Snap Map",
+        messenger: "Active now",
+        tiktok: "Following you",
       };
 
       let activeTemplateId = "whatsapp";
@@ -259,8 +346,9 @@
       const requestedLane = new URLSearchParams(window.location.search).get("lane");
       if (requestedLane && templateRegistry[requestedLane]) {
         activeTemplateId = requestedLane;
-        if (requestedLane === "instagram") {
-          editorState = applyFieldUpdate(editorState, "status", "Active now");
+        const defaultStatus = laneStatusDefaults[requestedLane];
+        if (defaultStatus) {
+          editorState = applyFieldUpdate(editorState, "status", defaultStatus);
         }
       }
 
@@ -268,6 +356,14 @@
         const activeTemplate = templateRegistry[activeTemplateId];
         const safeState = sanitizeEditorState(editorState);
         activeTemplate.render(previewRoot, safeState);
+
+        if (!isPaidUser) {
+          const wm = document.createElement("div");
+          wm.className = "preview-watermark";
+          wm.setAttribute("data-html2canvas-ignore", "true");
+          wm.textContent = WATERMARK_TEXT;
+          previewRoot.appendChild(wm);
+        }
       }
 
       function syncFormWithState() {
@@ -285,10 +381,9 @@
         input.addEventListener("change", (event) => {
           activeTemplateId = event.target.value;
 
-          if (activeTemplateId === "instagram") {
-            editorState = applyFieldUpdate(editorState, "status", "Active now");
-          } else if (activeTemplateId === "whatsapp") {
-            editorState = applyFieldUpdate(editorState, "status", "online");
+          const defaultStatus = laneStatusDefaults[activeTemplateId];
+          if (defaultStatus) {
+            editorState = applyFieldUpdate(editorState, "status", defaultStatus);
           }
 
           syncFormWithState();
@@ -308,6 +403,44 @@
 
       document.getElementById("export-btn")?.addEventListener("click", async () => {
         await exportPreview(previewRoot);
+      });
+
+      // Payment modal
+      const modalOverlay = document.getElementById("payment-modal-overlay");
+      const modalPlanName = document.getElementById("modal-plan-name");
+      const modalPrice = document.getElementById("modal-price");
+      const modalPriceNote = document.getElementById("modal-price-note");
+
+      const planMeta = {
+        weekly:   { name: "Weekly",   price: "$2.99", note: "per week — cancel any time" },
+        lifetime: { name: "Lifetime", price: "$9.99", note: "one-time payment — yours forever" },
+      };
+
+      function openPaymentModal(plan) {
+        const meta = planMeta[plan] || planMeta.weekly;
+        modalPlanName.textContent = meta.name;
+        modalPrice.textContent = meta.price;
+        modalPriceNote.textContent = meta.note;
+        modalOverlay.classList.add("is-open");
+        document.getElementById("modal-close-btn").focus();
+      }
+
+      function closePaymentModal() {
+        modalOverlay.classList.remove("is-open");
+      }
+
+      document.querySelectorAll(".btn-plan").forEach((btn) => {
+        btn.addEventListener("click", () => openPaymentModal(btn.dataset.plan));
+      });
+
+      document.getElementById("modal-close-btn").addEventListener("click", closePaymentModal);
+
+      modalOverlay.addEventListener("click", (e) => {
+        if (e.target === modalOverlay) closePaymentModal();
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closePaymentModal();
       });
     </script>
   </body>
