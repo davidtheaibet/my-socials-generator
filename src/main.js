@@ -5,7 +5,12 @@ import {
 } from "./state.js";
 import { instagramDmTemplate } from "./templates/instagramDm.js";
 import { whatsappTemplate } from "./templates/whatsapp.js";
-import { exportPreview } from "./export.js";
+import { snapchatTemplate } from "./templates/snapchat.js";
+import { messengerTemplate } from "./templates/messenger.js";
+import { tiktokTemplate } from "./templates/tiktok.js";
+import { exportPreview, isPaidUser } from "./export.js";
+
+const WATERMARK_TEXT = "my-socials-generator.app";
 
 const form = document.querySelector("#editor-form");
 const previewRoot = document.querySelector("#preview-root");
@@ -16,6 +21,17 @@ const laneInputs = Array.from(
 const templateRegistry = {
   instagram: instagramDmTemplate,
   whatsapp: whatsappTemplate,
+  snapchat: snapchatTemplate,
+  messenger: messengerTemplate,
+  tiktok: tiktokTemplate,
+};
+
+const laneStatusDefaults = {
+  instagram: "Active now",
+  whatsapp: "online",
+  snapchat: "Snap Map",
+  messenger: "Active now",
+  tiktok: "Following you",
 };
 
 let activeTemplateId = "whatsapp";
@@ -24,8 +40,9 @@ let editorState = { ...DEFAULT_EDITOR_STATE };
 const requestedLane = new URLSearchParams(window.location.search).get("lane");
 if (requestedLane && templateRegistry[requestedLane]) {
   activeTemplateId = requestedLane;
-  if (requestedLane === "instagram") {
-    editorState = applyFieldUpdate(editorState, "status", "Active now");
+  const defaultStatus = laneStatusDefaults[requestedLane];
+  if (defaultStatus) {
+    editorState = applyFieldUpdate(editorState, "status", defaultStatus);
   }
 }
 
@@ -33,6 +50,14 @@ function render() {
   const activeTemplate = templateRegistry[activeTemplateId];
   const safeState = sanitizeEditorState(editorState);
   activeTemplate.render(previewRoot, safeState);
+
+  if (!isPaidUser) {
+    const wm = document.createElement("div");
+    wm.className = "preview-watermark";
+    wm.setAttribute("data-html2canvas-ignore", "true");
+    wm.textContent = WATERMARK_TEXT;
+    previewRoot.appendChild(wm);
+  }
 }
 
 function syncFormWithState() {
@@ -54,11 +79,9 @@ laneInputs.forEach((input) => {
     }
     activeTemplateId = target.value;
 
-    // Lane-specific defaults keep previews realistic while sharing one state model.
-    if (activeTemplateId === "instagram") {
-      editorState = applyFieldUpdate(editorState, "status", "Active now");
-    } else if (activeTemplateId === "whatsapp") {
-      editorState = applyFieldUpdate(editorState, "status", "online");
+    const defaultStatus = laneStatusDefaults[activeTemplateId];
+    if (defaultStatus) {
+      editorState = applyFieldUpdate(editorState, "status", defaultStatus);
     }
 
     syncFormWithState();
