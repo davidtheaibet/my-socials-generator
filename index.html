@@ -9,13 +9,18 @@
   <body>
     <main class="app">
       <header class="app__header">
-        <p class="eyebrow">Template Lane</p>
-        <h1>Social Chat Generator</h1>
+        <img src="assets/logo.jpg" alt="My Social Generator" class="app__logo" />
         <p class="subtitle">Switch platform lane and edit fields. Preview updates instantly.</p>
       </header>
 
+      <!-- Mobile tab switcher (hidden on desktop via CSS) -->
+      <div class="tab-bar" role="tablist" aria-label="View switcher">
+        <button class="tab-btn is-active" data-tab="editor" role="tab" aria-selected="true" aria-controls="panel-editor">Editor</button>
+        <button class="tab-btn" data-tab="preview" role="tab" aria-selected="false" aria-controls="panel-preview">Preview</button>
+      </div>
+
       <section class="workspace" aria-label="Generator workspace">
-        <section class="panel panel--editor" aria-label="Editor">
+        <section id="panel-editor" class="panel panel--editor is-active" aria-label="Editor">
           <h2>Editor</h2>
           <fieldset class="lane-picker">
             <legend>Platform lane</legend>
@@ -68,7 +73,7 @@
           </form>
         </section>
 
-        <section class="panel panel--preview" aria-label="Preview">
+        <section id="panel-preview" class="panel panel--preview" aria-label="Preview">
           <h2>Preview</h2>
           <div id="preview-root" class="preview-root"></div>
           <div class="export-row">
@@ -441,6 +446,23 @@
 
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape") closePaymentModal();
+      });
+
+      // Mobile tab switching
+      const tabBtns = Array.from(document.querySelectorAll(".tab-btn"));
+      const editorPanel = document.getElementById("panel-editor");
+      const previewPanel = document.getElementById("panel-preview");
+
+      tabBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const tab = btn.dataset.tab;
+          tabBtns.forEach((b) => {
+            b.classList.toggle("is-active", b.dataset.tab === tab);
+            b.setAttribute("aria-selected", String(b.dataset.tab === tab));
+          });
+          editorPanel.classList.toggle("is-active", tab === "editor");
+          previewPanel.classList.toggle("is-active", tab === "preview");
+        });
       });
     </script>
   </body>
